@@ -1,0 +1,410 @@
+---
+title: "R Notebook"
+output: html_notebook
+
+---
+
+
+```{r setup, include=TRUE, echo=TRUE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo=TRUE, warning=FALSE)
+library(knitr)
+library(tm)
+library(stm)
+library(quanteda)
+library(RSQLite)
+library(ggplot2)
+library(wordcloud)
+library(igraph)
+library(RColorBrewer)
+library(visNetwork)
+library(tidyverse)
+library(topicmodels)
+library(ldatuning)
+myPalette <- brewer.pal(5, "YlGn")
+
+```
+
+
+```{r db, warning=FALSE, message=FALSE}
+con <- RSQLite::dbConnect(RSQLite::SQLite(), "dbjoinedData.db")
+data <- RSQLite::dbGetQuery(con, "SELECT * FROM joinedData LIMIT 10000")
+processed <- textProcessor(data$tweet_text, language = "de", customstopwords = c("mal", "wäre", "hätte", "denen", "rund", "eben", "vielleicht", "jemand", "gar", "beim", "daraus", "daran", "schon", "statt", "daher", "dafür", "darin", "darum", "dass", "darüber", "davon"))
+out <- prepDocuments(processed$documents, processed$vocab, processed$meta, lower.thresh = 5)
+```
+
+
+
+Estimate topic models for different K
+
+
+```{r}
+model1 <- stm(documents = out$documents, vocab = out$vocab, K = 10, max.em.its = 20, data = out$meta, init.type = "Spectral")
+model2 <- stm(documents = out$documents, vocab = out$vocab, K = 20, max.em.its = 20, data = out$meta, init.type = "Spectral")
+model3 <- stm(documents = out$documents, vocab = out$vocab, K = 30, max.em.its = 20, data = out$meta, init.type = "Spectral")
+model4 <- stm(documents = out$documents, vocab = out$vocab, K = 40, max.em.its = 20, data = out$meta, init.type = "Spectral")
+model5 <- stm(documents = out$documents, vocab = out$vocab, K = 50, max.em.its = 20, data = out$meta, init.type = "Spectral")
+model6 <- stm(documents = out$documents, vocab = out$vocab, K = 60, max.em.its = 20, data = out$meta, init.type = "Spectral")
+model7 <- stm(documents = out$documents, vocab = out$vocab, K = 70, max.em.its = 20, data = out$meta, init.type = "Spectral")
+model8 <- stm(documents = out$documents, vocab = out$vocab, K = 80, max.em.its = 20, data = out$meta, init.type = "Spectral")
+model9 <- stm(documents = out$documents, vocab = out$vocab, K = 100, max.em.its = 20, data = out$meta, init.type = "Spectral")
+```
+
+
+Generate numeric day variable
+
+```{r}
+convertToInteger <- function(created_at) {
+  startDate = as.Date("2021-03-25")
+  for (i in 1:length(created_at)) {
+    date = as.Date(strsplit(created_at[[i]], "T")[[1]][1])
+  #print(as.numeric(date-startDate))
+    created_at[[i]] = as.integer(date-startDate)
+  }
+  return(created_at)
+}
+
+```
+
+
+Estimate topic model with topical prevalence covariate sentiment
+
+
+```{r}
+data <- RSQLite::dbGetQuery(con, "SELECT tweet_text, sentiment FROM joinedData LIMIT 10000")
+processed <- textProcessor(data$tweet_text, metadata = data, language = "de", customstopwords = c("mal", "wäre", "hätte", "denen", "rund", "eben", "vielleicht", "jemand", "gar", "beim", "daraus", "daran", "schon", "statt", "daher", "dafür", "darin", "darum", "dass", "darüber", "davon"))
+out <- prepDocuments(processed$documents, processed$vocab, processed$meta, lower.thresh = 5)
+model6_sentiment <- stm(documents = out$documents, vocab = out$vocab, K = 60, prevalence =~ sentiment, max.em.its = 20, data = out$meta, init.type = "Spectral")
+prep_sentiment <- estimateEffect(1:60 ~ sentiment, model6_sentiment, meta = out$meta, uncertainty = "Global")
+
+```
+
+
+Estimate topic model with topical prevalence covariate sentiment*day
+
+```{r}
+
+data <- RSQLite::dbGetQuery(con, "SELECT tweet_text, created_at, sentiment FROM joinedData LIMIT 10000")
+data$created_at <- convertToInteger(data$created_at)
+processed <- textProcessor(data$tweet_text, metadata = data, language = "de", customstopwords = c("mal", "wäre", "hätte", "denen", "rund", "eben", "vielleicht", "jemand", "gar", "beim", "daraus", "daran", "schon", "statt", "daher", "dafür", "darin", "darum", "dass", "darüber", "davon"))
+out <- prepDocuments(processed$documents, processed$vocab, processed$meta, lower.thresh = 5)
+out$meta$created_at <- as.integer(out$meta$created_at)
+model6_moderation <- stm(documents = out$documents, vocab = out$vocab, K = 60, prevalence =~ sentiment * s(created_at), max.em.its = 20, data = out$meta, init.type = "Spectral")
+prep_moderation <- estimateEffect(1:60 ~ sentiment * s(created_at), model6_moderation, metadata = out$meta, uncertainty = "Global")
+
+```
+
+
+Estimate topic model with moderation
+
+```{r}
+data <- RSQLite::dbGetQuery(con, "SELECT * FROM joinedData LIMIT 10000")
+processed <- textProcessor(data$tweet_text, metadata = data, language = "de", customstopwords = c("mal", "wäre", "hätte", "denen", "rund", "eben", "vielleicht", "jemand", "gar", "beim", "daraus", "daran", "schon", "statt", "daher", "dafür", "darin", "darum", "dass", "darüber", "davon"))
+out <- prepDocuments(processed$documents, processed$vocab, processed$meta, lower.thresh = 5)
+model6_moderation2 <- stm(documents = out$documents, vocab = out$vocab, K = 60, prevalence =~ sentiment * media + sentiment * company + sentiment * politician, max.em.its = 20, data = out$meta, init.type = "Spectral")
+prep_moderation2 <- estimateEffect(1:60 ~ sentiment * media + sentiment * company + sentiment * politician, model6_moderation2, metadata = out$meta, uncertainty = "Global")
+
+```
+
+
+
+
+```{r}
+data <- RSQLite::dbGetQuery(con, "SELECT * FROM joinedData LIMIT 10000")
+processed <- textProcessor(data$tweet_text, metadata = data, language = "de", customstopwords = c("mal", "wäre", "hätte", "denen", "rund", "eben", "vielleicht", "jemand", "gar", "beim", "daraus", "daran", "schon", "statt", "daher", "dafür", "darin", "darum", "dass", "darüber", "davon"))
+out <- prepDocuments(processed$documents, processed$vocab, processed$meta, lower.thresh = 5)
+model6_moderation3 <- stm(documents = out$documents, vocab = out$vocab, K = 60, prevalence =~ sentiment * like_count + sentiment * quote_count + sentiment * reply_count, max.em.its = 20, data = out$meta, init.type = "Spectral")
+prep_moderation3 <- estimateEffect(1:60 ~ sentiment * like_count + sentiment * quote_count + sentiment * reply_count, model6_moderation3, metadata = out$meta, uncertainty = "Global")
+```
+
+
+
+### plot the effects of the covariates and moderation
+
+
+
+
+```{r}
+plot.estimateEffect(prep_moderation2, covariate = "politician", model = model6, method = "difference", cov.value1 = 1, cov.value2 = 0,
+                    xlab = "Non-politician ... Politician", xlim = c(-.025, .025), labeltype = "custom")
+
+```
+
+
+Plot covarites company
+
+
+```{r}
+plot.estimateEffect(prep_moderation2, covariate = "company", model = model6, method = "difference", cov.value1 = 1, cov.value2 = 0,
+                    xlab = "Non-company ... company", xlim = c(-.05, .05), labeltype = "custom", width = 40)
+```
+
+
+```{r}
+plot.estimateEffect(prep_moderation2, covariate = "media", model = model6, method = "difference", cov.value1 = 1, cov.value2 = 0,
+                    xlab = "Non-media ... media", xlim = c(-.05, .05), labeltype = "custom", width = 40)
+```
+
+
+
+
+Plot covariate sentiment
+
+
+```{r}
+
+plot.estimateEffect(prep_sentiment, covariate = "sentiment",
+                    model = model6_sentiment, method = "difference", cov.value1 = "positive", cov.value2 = "negative",
+                    xlab = "positive ... negative", xlim = c(-.05, .05), labeltype = "custom",
+                    custom.labels = topicLabels, , width = 40)
+```
+
+
+
+### Evaluate model performance
+
+
+Create vector with semCoh and exclu for all models
+
+```{r}
+semCoh <- semanticCoherence(model = model1, documents = out$documents)
+semCoh <- c(semCoh, semanticCoherence(model = model2, documents = out$documents))
+semCoh <- c(semCoh, semanticCoherence(model = model3, documents = out$documents))
+semCoh <- c(semCoh, semanticCoherence(model = model4, documents = out$documents))
+semCoh <- c(semCoh, semanticCoherence(model = model5, documents = out$documents))
+semCoh <- c(semCoh, semanticCoherence(model = model6, documents = out$documents))
+semCoh <- c(semCoh, semanticCoherence(model = model7, documents = out$documents))
+semCoh <- c(semCoh, semanticCoherence(model = model8, documents = out$documents))
+semCoh <- c(semCoh, semanticCoherence(model = model9, documents = out$documents))
+exclu <- exclusivity(model = model1)
+exclu <- c(exclu, exclusivity(model = model2))
+exclu <- c(exclu, exclusivity(model = model3))
+exclu <- c(exclu, exclusivity(model = model4))
+exclu <- c(exclu, exclusivity(model = model5))
+exclu <- c(exclu, exclusivity(model = model6))
+ exclu <- c(exclu, exclusivity(model = model7))
+exclu <- c(exclu, exclusivity(model = model8))
+exclu <- c(exclu, exclusivity(model = model9))
+```
+
+
+
+Calculate semantic coherence and exclusivity for all models
+
+
+```{r}
+
+semCoh_model1 <- semanticCoherence(model = model1, documents = out$documents)
+semCoh_model2 <- semanticCoherence(model = model2, documents = out$documents)
+semCoh_model3 <- semanticCoherence(model = model3, documents = out$documents)
+semCoh_model4 <- semanticCoherence(model = model4, documents = out$documents)
+semCoh_model5 <- semanticCoherence(model = model5, documents = out$documents)
+semCoh_model6 <- semanticCoherence(model = model6, documents = out$documents)
+semCoh_model7 <- semanticCoherence(model = model7, documents = out$documents)
+semCoh_model8 <- semanticCoherence(model = model8, documents = out$documents)
+semCoh_model9 <- semanticCoherence(model = model9, documents = out$documents)
+
+exclu_model1 <- exclusivity(model = model1)
+exclu_model2 <- exclusivity(model = model2)
+exclu_model3 <- exclusivity(model = model3)
+exclu_model4 <- exclusivity(model = model4)
+exclu_model5 <- exclusivity(model = model5)
+exclu_model6 <- exclusivity(model = model6)
+exclu_model7 <- exclusivity(model = model7)
+exclu_model8 <- exclusivity(model = model8)
+exclu_model9 <- exclusivity(model = model9)
+
+```
+
+
+
+Generate dataframe
+
+
+```{r}
+
+color <- c()
+for (i in 1:10) {
+  if (i == 9) {
+    next
+  }
+  for (j in (1:(10*i))) {
+    color = c(color, paste("t",i,sep=""))
+  }
+}
+dataf <- data.frame(semCoh, exclu, color)
+
+```
+
+
+
+Plot semantic coherence and exclusivity in scatterplot
+
+
+
+```{r}
+ggplot(dataf, aes(x=semCoh, y=exclu, color=color ))+
+  geom_point(size = 1, alpha = 0.7) +
+  labs(x = "Semantic coherence",
+       y = "Exclusivity")
+```
+
+
+
+
+Create data frame with mean semantic coherence and mean exclusivity by number of topics
+
+```{r}
+
+df <- data.frame(topics=c(10,20,30,40,50,60,70,80,100), semCoh=c(mean(semCoh_model1), mean(semCoh_model2), mean(semCoh_model3), mean(semCoh_model4), mean(semCoh_model5), mean(semCoh_model6), mean(semCoh_model7), mean(semCoh_model8), mean(semCoh_model9)))
+df2 <- data.frame(topics=c(10,20,30,40,50,60,70,80,100), exclu=c(mean(exclu_model1), mean(exclu_model2), mean(exclu_model3), mean(exclu_model4), mean(exclu_model5), mean(exclu_model6), mean(exclu_model7), mean(exclu_model8), mean(exclu_model9)))
+
+```
+
+
+
+# plot semantic coherence in line chart
+
+```{r}
+
+ggplot(data=df, aes(x=topics, y=semCoh, group=1)) +
+  geom_line()+
+  geom_point()+
+  labs(x = "Number of topics",
+       y = "Semantic Coherence")+
+  scale_x_continuous(n.breaks = 10)+
+  theme_bw()+
+  theme(
+    plot.background = element_blank(),
+    #panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    axis.line = element_line(color = 'black'),
+    text = element_text(size=14),
+    axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0), size=13),
+    axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0), size=13)
+    )
+
+```
+
+
+Plot exclusivity in line chart
+
+```{r}
+
+ggplot(data=df2, aes(x=topics, y=exclu, group=1)) +
+  geom_line()+
+  geom_point()+
+  labs(x = "Number of topics",
+       y = "Exclusivity")+
+  scale_x_continuous(n.breaks = 10)+
+  theme_bw()+
+  theme(
+    plot.background = element_blank(),
+    #panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    axis.line = element_line(color = 'black'),
+    text = element_text(size=14),
+    axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0), size=13),
+    axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0), size=13)
+  )
+  
+
+```
+
+
+
+
+
+
+Display word cloud for topics' keywords
+
+```{r}
+cloud(model1, topic=1, max.words = 80)
+cloud(model2, topic=2, max.words = 80)
+cloud(model3, topic=3, max.words = 80)
+cloud(model4, topic=4, max.words = 80)
+cloud(model5, topic=5, max.words = 80)
+cloud(model6, topic=6, max.words = 80)
+cloud(model7, topic=7, max.words = 80)
+cloud(model8, topic=8, max.words = 80)
+cloud(model9, topic=nrtopics, max.words = 80)
+
+```
+
+
+
+Visualize topic correlations
+
+```{r}
+
+topicCor <- topicCorr(model6, cutoff = 0.01)
+plot.topicCorr(topicCor)
+
+topicCor$cor[3,40]
+
+```
+``` {r}
+plot(model6, type = "label", topics = c(60, 3, 12, 18), main = "Themenbegriffe")
+
+```
+
+
+Visualize topic proportions
+
+
+```{r}
+
+plot.STM(model6, type ="summary", text.cex = 0.5)
+
+```
+
+
+```{r}
+plot.STM(model6, type="perspectives", topics = c(1,2))
+```
+
+
+
+Linkanalyse
+
+
+
+``` {r}
+
+nodes <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/visNodes.json")
+
+edges <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/visEdges.json")
+
+
+visNetwork(nodes, edges, height = "1000px", width = "100%") %>%
+  visOptions(selectedBy = "group", 
+             highlightNearest = TRUE, 
+             nodesIdSelection = TRUE) %>%
+  visPhysics(stabilization = FALSE) %>%
+  visLegend()
+
+
+```
+
+
+
+
+Print topic keywords
+
+```{r}
+
+labels <-labelTopics(model6, n = 5)
+for (i in 1:length(labels$prob[,1])) {
+  cat(paste("Topic",i,"\n"))
+  for (j in 1:length(labels$prob[1,])) {
+    cat(paste(labels$prob[i,j],"\n"), sep =" ")
+  }
+  cat("\n")
+}
+
+```
+
+
+
+
