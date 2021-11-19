@@ -27,7 +27,7 @@ myPalette <- brewer.pal(5, "YlGn")
 
 ```{r db, warning=FALSE, message=FALSE}
 con <- RSQLite::dbConnect(RSQLite::SQLite(), "dbjoinedData.db")
-data <- RSQLite::dbGetQuery(con, "SELECT tweet_text FROM joinedData LIMIT 60000")
+data <- RSQLite::dbGetQuery(con, "SELECT tweet_text FROM joinedData LIMIT 100000")
 processed <- textProcessor(data$tweet_text, language = "de", customstopwords = c("mal", "wäre", "hätte", "denen", "rund", "eben", "vielleicht", "jemand", "gar", "beim", "daraus", "daran", "schon", "statt", "daher", "dafür", "darin", "darum", "dass", "darüber", "davon"))
 out <- prepDocuments(processed$documents, processed$vocab, processed$meta, lower.thresh = 5)
 ```
@@ -240,11 +240,13 @@ Visualize topic proportions
 
 ```{r}
 
-plot.STM(model5, type ="summary", text.cex = 0.4)
+plot.STM(model7, type ="summary", text.cex = 0.3)
 
 ```
+
+
 ``` {r}
-plot(model5, type = "label", topics = c(1, 7, 12, 8), main = "Themenbegriffe")
+plot(model5, type = "label", topics = c(9, 32, 7, 33), main = "Themenbegriffe")
 
 ```
 
@@ -253,14 +255,14 @@ Display word cloud for topics' keywords
 
 ```{r}
 
-cloud(model5, topic=1, max.words = 100)
+cloud(model7, topic=9, max.words = 100)
 
 ```
 
 
 
 ```{r}
-plot.STM(model5, type="perspectives", topics = c(1,7))
+plot.STM(model5, type="perspectives", topics = c(9,32))
 ```
 
 
@@ -293,7 +295,7 @@ Print topic keywords
 
 ```{r}
 
-labels <-labelTopics(model5, n = 5)
+labels <-labelTopics(model7, n = 5)
 for (i in 1:length(labels$prob[,1])) {
   cat(paste("Topic",i,"\n"))
   for (j in 1:length(labels$prob[1,])) {
