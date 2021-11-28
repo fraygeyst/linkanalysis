@@ -270,13 +270,13 @@ plot.STM(model5, type="perspectives", topics = c(9,32))
 
 Linkanalyse
 
-
+10.000 Daten
 
 ``` {r}
 
-nodes <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/visNodes.json")
+nodes <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%2010.000/visNodes10.000.json")
 
-edges <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/visEdges.json")
+edges <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%2010.000/visEdges10.000.json")
 
 
 visNetwork(nodes, edges, height = "1000px", width = "100%") %>%
@@ -289,6 +289,24 @@ visNetwork(nodes, edges, height = "1000px", width = "100%") %>%
 
 ```
 
+
+100.000 Daten
+
+``` {r}
+
+nodes <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%20100.000/visNodes100.000.json")
+
+edges <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%20100.000/visEdges100.000.json")
+
+
+visNetwork(nodes, edges, height = "1000px", width = "100%") %>%
+  visOptions(selectedBy = "group", 
+             highlightNearest = TRUE, 
+             nodesIdSelection = TRUE) %>%
+  visPhysics(stabilization = FALSE)
+
+
+```
 
 
 Print topic keywords
