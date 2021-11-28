@@ -1,3 +1,27 @@
+#########################
+### Generating a console log in JSON format for the edges of linkanalysis
+#
+### Requirements: 
+#   -there are two topic models, one with 10.000 fetched tweets and one with 100.000
+#   -ordered list with node id's
+#   -processed list is found in /Datenaufbereitung 10.000/Linkanalyse 10.000.xlsx and /Datenaufbereitung 100.000/Linkanalyse 100.000.xlsx
+#   -all topics have 5 words connected to each other
+#   -5 variables as placeholder for every word in each topic
+#   -for each kind of topic model an array with the ordered list items 
+# 
+### Function
+#   -for each kind of linkanalysis a for loop 
+#   -the loop makes all possibilities of connections as edges
+#   -with print statements, the console log is made to
+#   -after each full print block, the variables are summarized with 5, to go to the next topic
+# 
+### Results:
+#   -Console log with the edges for the linkanalysis
+#   -stored in JSON ready format 
+#   -final results stored in /Datenaufbereitung 10.000/visEdges10.000.json and /Datenaufbereitung 100.000/visEdges100.000.json
+#########################
+
+
 i = 0
 j = 1
 k = 2
@@ -7,7 +31,7 @@ a = [0	,1	,2	,3	,4	,5	,20	,7	,8	,9	,10	,11	,12	,5	,13	,14	,15	,16	,216,9	,167,15
 b = [229	,69	,198	,1	,141	,158	,158	,237	,179	,32	,44	,188	,223	,271	,227	,246	,117	,66	,306	,247	,246	,276	,157	,37	,156	,304	,255	,174	,19	,98	,76	,113	,261	,199	,38	,71	,190	,258	,254	,190	,2	,274	,165	,54	,85	,183	,248	,239	,93	,101	,251	,61	,111	,252	,302	,103	,50	,111	,43	,221	,108	,42	,138	,263	,58	,107	,148	,298	,129	,218	,266	,286	,211	,214	,238	,63	,228	,100	,5	,297	,222	,294	,135	,191	,61	,210	,30	,70	,232	,230	,74	,86	,87	,136	,172	,160	,102	,109	,120	,99	,53	,29	,288	,29	,245	,21	,78	,47	,104	,126	,265	,14	,10	,25	,230	,95	,257	,240	,159	,224	,283	,22	,39	,263	,225	,168	,216	,59	,282	,124	,62	,121	,284	,270	,151	,36	,26	,264	,171	,146	,212	,92	,291	,24	,213	,216	,193	,256	,195	,278	,169	,208	,274	,33	,128	,243	,273	,132	,145	,110	,107	,51	,250	,45	,3	,153	,191	,116	,90	,267	,248	,114	,203	,8	,9	,15	,80	,115	,7	,137	,131,131	,164	,113	,303	,113	,169	,142	,280	,119	,260	,202	,105	,226	,181	,281	,79	,259	,79	,292	,252	,279	,55	,244	,233	,196	,57	,222	,201	,287	,199	,64	,48	,206	,208	,28	,89	,85	,182	,197	,41	,149	,17	,219	,127	,307	,299	,161	,81	,189	,65	,134	,56	,272	,16	,84	,140	,231	,96	,177	,244	,106	,88	,205	,293	,117	,112	,125	,77	,123	,290	,274	,20	,144	,178	,34	,273	,34	,308	,152	,52	,302	,176	,277	,150	,122	,300	,194	,249	,83	,175	,289	,91	,73	,301	,6	,172	,269	,97	,186	,130	,185	,167	,67	,235	,220	,72	,217	,170	,82	,174	,147	,285	,236	,207	,275	,12	,27	,200	,12	,155	,180	,135	,11	,234	,23	,143	,184	,242	,295	,204	,75	,118	,49	,107	,94	,60	,179	,296	,68	,163	,166	,215	,268	,253	,262	,256	,139	,305	,162	,154	,187	,35	,209	,40	,46	,173	,241	,133	,4	,31	,192	,203	,18	,13	,172	,128	,114	,89	,203]
 
 
-"""
+# Topic model with 10.000 analyzed tweets
 for x in range (1,61):
     ###DEBUG
     # print('Topic: '+ str(x))
@@ -27,10 +51,8 @@ for x in range (1,61):
     l = l + 5
     m = m + 5
     x = x + 1
-"""
 
-
-
+# Topic model with 100.000 analyzed tweets
 for x in range (1,71):
     ###DEBUG
     # print('Topic: '+ str(x))
