@@ -6,23 +6,16 @@ output: html_notebook
 
 
 ```{r setup, include=TRUE, echo=TRUE, warning=FALSE, message=FALSE}
-knitr::opts_chunk$set(echo=TRUE, warning=FALSE)
-library(knitr)
-library(tm)
+
 library(stm)
 library(quanteda)
 library(RSQLite)
 library(ggplot2)
 library(wordcloud)
-library(igraph)
-library(RColorBrewer)
 library(visNetwork)
-library(tidyverse)
-library(topicmodels)
-library(ldatuning)
-myPalette <- brewer.pal(5, "YlGn")
 
 ```
+
 
 
 ```{r db, warning=FALSE, message=FALSE}
@@ -256,6 +249,8 @@ Display word cloud for topics' keywords
 ```{r}
 
 cloud(model7, topic=9, max.words = 100)
+cloud(model7, topic=32, max.words = 100)
+cloud(model7, topic=7, max.words = 100)
 
 ```
 
@@ -283,8 +278,7 @@ visNetwork(nodes, edges, height = "1000px", width = "100%") %>%
   visOptions(selectedBy = "group", 
              highlightNearest = TRUE, 
              nodesIdSelection = TRUE) %>%
-  visPhysics(stabilization = FALSE) %>%
-  visLegend()
+  visPhysics(stabilization = FALSE) 
 
 
 ```
