@@ -234,13 +234,13 @@ Visualize topic proportions
 
 ```{r}
 
-plot.STM(model7, type ="summary", text.cex = 0.3)
+plot.STM(model8, type ="summary", text.cex = 0.3)
 
 ```
 
 
 ``` {r}
-plot(model5, type = "label", topics = c(9, 32, 7, 33), main = "Themenbegriffe")
+plot(model8, type = "label", topics = c(9, 32, 31), main = "Themenbegriffe")
 
 ```
 
@@ -249,16 +249,15 @@ Display word cloud for topics' keywords
 
 ```{r}
 
-cloud(model7, topic=9, max.words = 100)
-cloud(model7, topic=32, max.words = 100)
-cloud(model7, topic=7, max.words = 100)
+cloud(model8, topic=9, max.words = 100)
+cloud(model8, topic=32, max.words = 100)
 
 ```
 
 
 
 ```{r}
-plot.STM(model7, type="perspectives", topics = c(9,32))
+plot.STM(model8, type="perspectives", topics = c(9,32))
 ```
 
 
@@ -308,7 +307,7 @@ Print topic keywords
 
 ```{r}
 
-labels <-labelTopics(model7, n = 5)
+labels <-labelTopics(model8, n = 5)
 for (i in 1:length(labels$prob[,1])) {
   cat(paste("Topic",i,"\n"))
   for (j in 1:length(labels$prob[1,])) {
