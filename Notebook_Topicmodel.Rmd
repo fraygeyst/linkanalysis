@@ -302,6 +302,21 @@ visNetwork(nodes, edges, height = "1000px", width = "100%") %>%
 
 ```
 
+``` {r}
+
+nodes <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%20100.000/Model7/visNodes100.000Model7.json")
+
+edges <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%20100.000//Model7/visEdges100.000Model7.json")
+
+
+visNetwork(nodes, edges, height = "1000px", width = "100%") %>%
+  visOptions(selectedBy = "group", 
+             highlightNearest = TRUE, 
+             nodesIdSelection = TRUE) %>%
+  visPhysics(stabilization = FALSE)
+
+
+```
 
 Print topic keywords
 
