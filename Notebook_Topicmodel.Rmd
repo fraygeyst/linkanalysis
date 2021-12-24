@@ -6,7 +6,8 @@ output: html_notebook
 
 
 ```{r setup, include=TRUE, echo=TRUE, warning=FALSE, message=FALSE}
-
+knitr::opts_chunk$set(echo=TRUE, warning=FALSE)
+library(knitr)
 library(stm)
 library(quanteda)
 library(RSQLite)
@@ -257,7 +258,7 @@ cloud(model7, topic=7, max.words = 100)
 
 
 ```{r}
-plot.STM(model5, type="perspectives", topics = c(9,32))
+plot.STM(model7, type="perspectives", topics = c(9,32))
 ```
 
 
