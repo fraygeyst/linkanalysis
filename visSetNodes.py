@@ -18,7 +18,8 @@
 #   -final results stored in /Datenaufbereitung 10.000/visNodes10.000.json and /Datenaufbereitung 100.000/visNodes100.000.json
 #########################
 
-b = [	"	*drei blaue Herzen*	",
+b = [	
+"   *drei blaue Herzen*	",
 "	*drei lachende Emojis*	",
 "	aachen	",
 "	abend	",
@@ -354,7 +355,7 @@ b = [	"	*drei blaue Herzen*	",
 		
 
 
-for x in range (1,351):
-    print('{"id": ' + str(x) + ', "label": "' + str(b[x]) + '" , "group": 0},')
+for x in range (0,333):
+    print('{"id": ' + str(x+1) + ', "label": "' + str(b[x]) + '" , "group": 0},')
 
     x = x + 1
