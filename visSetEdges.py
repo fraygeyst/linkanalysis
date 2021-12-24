@@ -32,28 +32,28 @@ b = [213	,323	,28	,175	,77	,172	,124	,288	,173	,206	,202	,306	,53	,253	,257	,269
 
 
 # Topic model with 10.000 analyzed tweets
-for x in range (1,61):
+#for x in range (1,61):
     ###DEBUG
     # print('Topic: '+ str(x))
-    print('{"from": ' + str(a[i]) + ', "to": ' + str(a[j]) + "},")
-    print('{"from": ' + str(a[i]) + ', "to": ' + str(a[k]) + "},")
-    print('{"from": ' + str(a[i]) + ', "to": ' + str(a[l]) + "},")
-    print('{"from": ' + str(a[i]) + ', "to": ' + str(a[m]) + "},")
-    print('{"from": ' + str(a[j]) + ', "to": ' + str(a[k]) + "},")
-    print('{"from": ' + str(a[j]) + ', "to": ' + str(a[l]) + "},")
-    print('{"from": ' + str(a[j]) + ', "to": ' + str(a[m]) + "},")
-    print('{"from": ' + str(a[k]) + ', "to": ' + str(a[l]) + "},")
-    print('{"from": ' + str(a[k]) + ', "to": ' + str(a[m]) + "},")
-    print('{"from": ' + str(a[l]) + ', "to": ' + str(a[m]) + "},")
-    i = i + 5
-    j = j + 5
-    k = k + 5
-    l = l + 5
-    m = m + 5
-    x = x + 1
+#    print('{"from": ' + str(a[i]) + ', "to": ' + str(a[j]) + "},")
+#    print('{"from": ' + str(a[i]) + ', "to": ' + str(a[k]) + "},")
+#    print('{"from": ' + str(a[i]) + ', "to": ' + str(a[l]) + "},")
+#    print('{"from": ' + str(a[i]) + ', "to": ' + str(a[m]) + "},")
+#    print('{"from": ' + str(a[j]) + ', "to": ' + str(a[k]) + "},")
+#    print('{"from": ' + str(a[j]) + ', "to": ' + str(a[l]) + "},")
+#    print('{"from": ' + str(a[j]) + ', "to": ' + str(a[m]) + "},")
+#    print('{"from": ' + str(a[k]) + ', "to": ' + str(a[l]) + "},")
+#    print('{"from": ' + str(a[k]) + ', "to": ' + str(a[m]) + "},")
+#    print('{"from": ' + str(a[l]) + ', "to": ' + str(a[m]) + "},")
+#    i = i + 5
+#    j = j + 5
+#    k = k + 5
+#    l = l + 5
+#    m = m + 5
+#    x = x + 1
 
 # Topic model with 100.000 analyzed tweets
-for x in range (1,71):
+for x in range (1,81):
     ###DEBUG
     # print('Topic: '+ str(x))
     print('{"from": ' + str(b[i]) + ', "to": ' + str(b[j]) + "},")
