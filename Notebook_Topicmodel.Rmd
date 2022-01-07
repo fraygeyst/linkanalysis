@@ -257,7 +257,7 @@ cloud(model8, topic=32, max.words = 100)
 
 
 ```{r}
-plot.STM(model8, type="perspectives", topics = c(9,32))
+plot.STM(model8, type="perspectives", topics = c(61,17))
 ```
 
 
