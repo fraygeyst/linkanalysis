@@ -1,11 +1,28 @@
 ---
-title: "R Notebook"
+title: "Social Media-Sentiment-Analyse zur Bundestagswahl 2021 der Bundesrepublik Deutschland"
+subtitle: "Topic Model und Linkanalyse"
+author: "Marc Zintel"
 output: html_notebook
 
 ---
 
 
-```{r setup, include=TRUE, echo=TRUE, warning=FALSE, message=FALSE}
+
+
+Das folgende Workbook ist Teil einer Masterthesis und veranschaulicht das Topic Model mit anschließender Linkanalyse der Arbeit. Alle hier verwendeten Bibliotheken und Pakete sind Open Source und damit frei zugänglich. 
+
+### Verwendete Bibliotheken
+
+•	RSQLite: Modul zur Datenverbindung mit SQLite Datenbankdateien.   
+•	stm: Die Bibliothek bietet alle Funktionen, die zur Erstellung des gewünschten Structural Topic Model (stm) notwendig sind. 
+•	quanteda: quanteda ist ein R Paket zur Verarbeitung und Analyse von Texten in natürlicher Sprache. Dabei liegt der Fokus auf einem einfachen und sicheren Einstieg in die Verwendung von Textanalysen in R.  
+•	Ggplot2: Flexibles und einfaches Grafikpaket zur Erstellung und Visualisierung von Diagrammen. 
+•	Wordcloud: Bietet die Funktion zur Erstellung von wordclouds. Diese können Verhältnisse, Unterschiede und Ähnlichkeiten in Text-Gruppen visualisieren. 
+•	visNetwork: Diese Bibliothek ist zur Darstellung von Network-Visualisierungen.  Diese werden zur Linkanalyse verwendet werden.
+
+
+
+```{r setup, include=TRUE, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo=TRUE, warning=FALSE)
 library(knitr)
 library(stm)
@@ -19,6 +36,17 @@ library(visNetwork)
 
 
 
+# 1. Einlesen und Vorbereiten der Daten
+
+Der erste Schritt beim Topic Model, ist die Erstellung des Textkorpus. Für diesen wird zunächst die Datenbank dbjoinedData.db aufgerufen, aus der nur noch die Tweet Texte in der finalen Version selektiert wurden. In vorherigen Versuchen wurden auch andere Daten mit in die Veranschaulichung aufgenommen. Diese wurden wieder verworfen, zum einen um eine größere Datenmenge verarbeiten zu können, zum anderen da sich gezeigt hat, dass die Informationen für das Topic Model nicht hilfreich sind. Zum Einlesen der Daten wird direkt über eine SQLite Schnittstelle auf die Tabelle joinedData zugegriffen, ein Import oder ähnliches ist nicht notwendig. Mit den Daten wird danach der Textkorpus erstellt, der im stm-Paket in drei Teilen dargestellt wird 
+document ist dabei eine Dokumentenliste, die Wortindizes und ihre zugehörigen Zählungen enthält, vocab dient als Zeichenvektor, der die mit den Wortindizes verbundenen Wörter enthält und meta ist eine Metadatenmatrix mit Dokument-Kovarianzen.  
+
+Allerdings müssen die Dokumente und Wörter mit ihren Metadaten abgeglichen werden. Auch dazu bietet das stm-Paket für R direkt ein Werkzeug an, das verwendet werden kann. Der so bezeichnete textProcessor kann die Daten für die Structural Topic Model Analyse vorbereiten, indem beispielsweise Stoppwörter ausgelassen werden. Ein Stoppwort soll in „einer Volltextindexierung nicht beachtet werden, da es sehr häufig auftreten kann und gewöhnlich keine Relevanz für die Erfassung des Dokumentinhalts besitzt“.  Im vorliegenden Projekt wurde eine knappe Liste mit häufigen Stoppwörtern verwendet, jedoch kann als Ausblick die Verwendung von größeren Listen verwendet werden. Dies musste aufgrund der steigenden Rechenleistung beim textProcessor in diesem Projekt ausgelassen werden. 
+
+Die eingelesenen Daten werden daraufhin mit der prepDocuments Funktion weiterverarbeitet. Diese entfernt selten genutzte Begriffe, wobei die Grenze mit dem Parameter lower.tresh selbst gewählt werden kann. Dabei hat sich durch Ausprobieren ein Wert von fünf als sinnvoll erwiesen, um einen Großteil der wenig verwendeten Begriffe auszuschließen. 
+
+
+
 ```{r db, warning=FALSE, message=FALSE}
 con <- RSQLite::dbConnect(RSQLite::SQLite(), "dbjoinedData.db")
 data <- RSQLite::dbGetQuery(con, "SELECT tweet_text FROM joinedData LIMIT 100000")
@@ -27,7 +55,14 @@ out <- prepDocuments(processed$documents, processed$vocab, processed$meta, lower
 ```
 
 
-Estimate topic models for different K
+Das Einlesen der Daten hat sich im Verfahren des Topic Models als große Schwachstelle herausgetan. Bislang waren sämtliche Systemvoraussetzungen, die in Kapitel 2.2.2. der Masterarbeit spezifiziert wurden mehr als ausreichend. Jedoch haben verschiedene Probleme mit der R Entwicklungsumgebung dazu geführt, dass auf ein anderes Ausweichsystem gewechselt werden musste. Das Ausweichsystem bietet eine Intel Core i7 CPU und 16GB RAM. Auf diesem Gerät wurde das gesamte R Workbook aufgebaut, wobei es zu verschiedene Limitationen kam. Das Topic Model konnte maximal 100.000 Daten der insgesamt über sechs Millionen einbinden. Dies führt dazu, dass das Topic Model nur mit etwa 1,7% der Gesamtdaten entwickelt werden konnte. Dies gilt es in der Evaluation zu beachten, stellt aber auch Möglichkeiten in Ausblick, auf dem gegebenen Datensatz weiter zu forschen. Als Alternative wurde versucht, das Notebook über Google Colaboratory  auszuführen, doch auch sämtliche Versuche scheiterten aufgrund des Auslaufens des Arbeitsspeichers. 
+
+
+
+# 2. Schätzung
+
+
+Die Dokumente, das Vokabular und die Meta Daten die in der Datengewinnung erhalten wurden, müssen nun zu einem STM geschätzt werden. Dazu werden verschiedene Modelle mit verschiedenen Quantitäten gefertigt. Es werden im Folgenden zehn Modelle mit jeweils zehn Topics mehr erstellt. Das kleinste erhält also zehn und das größte 100 Topics. Der Prozess wird dabei ein Maximum von 20 Iterationen haben, was in max.em.its festgelegt ist. Die Anzahl der Iteration bleibt bei allen Modellen gleich. 
 
 
 ```{r}
@@ -70,10 +105,17 @@ model9 <- stm(documents = out$documents, vocab = out$vocab, K = 90, max.em.its =
 model10 <- stm(documents = out$documents, vocab = out$vocab, K = 100, max.em.its = 20, data = out$meta, init.type = "Spectral")
 ```
 
-### Evaluate model performance
+
+Dadurch werden zehn vollständig geschätzte Modelle geliefert, die 10 bis 100 Topics beinhalten. Welches dieser Modelle bei der Linkanalyse ausgewählt wird, wird im nächsten Schritt durch eine Evaluation der Ergebnisse ermittelt. 
 
 
-Create vector with semCoh and exclu for all models
+
+# 3. Evaluierung
+
+Zur Evaluierung der Modelle müssen Metriken gewählt werden, die zur Wahl eines geeigneten Models für die Linkanalyse führen. Dazu wird zunächst die semantische Kohärenz in Verbindung mit der Exklusivität berechnet. Die semantische Kohärenz gibt den Zusammenhang zwischen aufeinanderfolgenden Sätzen oder Abschnitten wider, wodurch diese Abschnitte und Texte zu einem zusammenhängenden Gespräch oder Text werden. Sie ist maximiert, wenn die wahrscheinlichsten Wörter in einem Topic häufig zusammen auftreten.  Da eine hohe semantische Kohärenz relativ einfach zu erreichen ist, wenn nur wenige Themen von häufigen Wörtern dominiert werden, wird zusätzlich die Exklusivität von Wörtern betrachtet. Dazu wird die FREX Metrik verwendet, die einen Mittelwert des Wortrangs in Bezug auf Exklusivität und Frequenz bildet. 
+
+Dazu wird ein Vektor mit der Semantischen Kohärenz und der Exklusivität für alle Modelle erstellt. Dazu können die passenden Funktionen des stm-Paketes genutzt werden. Dieser Vektor wird durch eine eindeutige Farbe, die zuvor in einem Dataframe abgespeichert wird, für jedes Topic veranschaulicht.
+
 
 ```{r}
 semCoh <- semanticCoherence(model = model1, documents = out$documents)
@@ -101,11 +143,8 @@ exclu <- c(exclu, exclusivity(model = model10))
 
 
 
-Calculate semantic coherence and exclusivity for all models
-
 
 ```{r}
-
 semCoh_model1 <- semanticCoherence(model = model1, documents = out$documents)
 semCoh_model2 <- semanticCoherence(model = model2, documents = out$documents)
 semCoh_model3 <- semanticCoherence(model = model3, documents = out$documents)
@@ -131,12 +170,7 @@ exclu_model10 <- exclusivity(model = model10)
 ```
 
 
-
-Generate dataframe
-
-
 ```{r}
-
 color <- c()
 for (i in 1:11) {
   if (i == 11) {
@@ -151,11 +185,6 @@ dataf <- data.frame(semCoh, exclu, color)
 ```
 
 
-
-Plot semantic coherence and exclusivity in scatterplot
-
-
-
 ```{r}
 ggplot(dataf, aes(x=semCoh, y=exclu, color=color ))+
   geom_point(size = 1, alpha = 0.7) +
@@ -166,21 +195,18 @@ ggplot(dataf, aes(x=semCoh, y=exclu, color=color ))+
 
 
 
-Create data frame with mean semantic coherence and mean exclusivity by number of topics
+
+Zusätzlich wird für jedes Modell im Einzelnen sowohl Semantische Kohärenz als auch Exklusivität berechnet und für die jeweilige Anzahl der Topics der Mittelwert abgebildet. 
+
 
 ```{r}
-
 df <- data.frame(topics=c(10,20,30,40,50,60,70,80,90,100), semCoh=c(mean(semCoh_model1), mean(semCoh_model2), mean(semCoh_model3), mean(semCoh_model4), mean(semCoh_model5), mean(semCoh_model6), mean(semCoh_model7), mean(semCoh_model8), mean(semCoh_model9), mean(semCoh_model10)))
 df2 <- data.frame(topics=c(10,20,30,40,50,60,70,80,90,100), exclu=c(mean(exclu_model1), mean(exclu_model2), mean(exclu_model3), mean(exclu_model4), mean(exclu_model5), mean(exclu_model6), mean(exclu_model7), mean(exclu_model8), mean(exclu_model9), mean(exclu_model10)))
 
 ```
 
 
-
-# plot semantic coherence in line chart
-
 ```{r}
-
 ggplot(data=df, aes(x=topics, y=semCoh, group=1)) +
   geom_line()+
   geom_point()+
@@ -202,10 +228,7 @@ ggplot(data=df, aes(x=topics, y=semCoh, group=1)) +
 ```
 
 
-Plot exclusivity in line chart
-
 ```{r}
-
 ggplot(data=df2, aes(x=topics, y=exclu, group=1)) +
   geom_line()+
   geom_point()+
@@ -223,29 +246,42 @@ ggplot(data=df2, aes(x=topics, y=exclu, group=1)) +
     axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0), size=13),
     axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0), size=13)
   )
-  
-
 ```
 
 
 
-Visualize topic proportions
+
+Da auf eine Linkanalyse hingearbeitet wird, die auch Topic-übergreifend Verbindungen herstellen soll, ist es sinnvoll einen möglichst hohen Wert in der semantischen Kohärenz im ausgewählten Model vorzufinden. Gleichzeitig soll aber eine nicht zu hohe Exklusivität vorhanden sein, da Wörter die zugleich in verschiedenen Topics vorkommen, Verbindungen zwischen einander bilden. Dadurch ist die Wahl auf Model 8 mit 80 Themen gefallen, da ein extremer Abfall der Exklusivität nach einem stetigen Wachstum bis Model 7 stattgefunden hat und den geringsten Wert seit Model 2 hat. Model 2 hat zwar eine deutlich höhere semantische Kohärenz, jedoch wird auf ein Model gesetzt mit einer höheren Anzahl an Topics. Die zweite Wahl wäre Model 5, da hier eine höhere semantische Kohärenz und eine geringere Exklusivität als in den darauffolgenden Modellen vorhanden ist, jedoch wurde dennoch auf Model 8 aufgebaut, da die Anzahl von 50 Topics als zu gering eingestuft wurde.
+
+Das Topic Model umfasst also 80 Topics, die alle wiederum eine Menge an Wörtern enthalten.  Auf diesem model8 mit insgesamt 80 Topics werden nun weitere Visualisierungen aufgebaut, die dabei helfen sollen Erkenntnisse aus dem Model zu ziehen und Beziehungen zwischen Metadaten und Topics zu erkennen. Dazu hat das stm-Paket die Funktion estimateEffect implementiert, mit der Beziehungen geschätzt werden können. Diese Funktion simuliert eine Reihe von Parametern, die dann aufgezeichnet werden können. Durch den Aufruf der Funktion plot.estimateEffect können verschiedene Schätzstrategien und Standardmerkmale für die Darstellung verwendet werden. Die erste gewählte Visualisierung wird mit plot.STM(,type = "summary") ausgeführt, womit der erwartete Anteil der Korpusse der Topics dargestellt wird.
+
 
 
 ```{r}
-
 plot.STM(model8, type ="summary", text.cex = 0.3)
 
 ```
 
+
+Um weitere Begriffe gewünschter Topics anzuzeigen, bietet sich plot.STM(,type = "label") an. Diese gibt mehr meistverwendete Wörter eines jeden Topics an. Dazu werden die drei Top Topics dargestellt. Daraus können weitere Zusammenhänge erkannt werden. Daraus ergeben sich Ideen, die auf die Inhalte der Tweets aus den jeweiligen Topics schließen lassen. 
 
 ``` {r}
 plot(model8, type = "label", topics = c(9, 32, 31), main = "Themenbegriffe")
 
 ```
 
+Unter dem Top Wort AfD befindet sich direkt gefolgt der Partei-Wahlslogan „Deutschland aber normal“ in Topic 9, des Weiteren aber auch die Begriffe „noafd“ und „nazi“ die man als Reaktion von Gegnerinnen und Gegnern deuten kann. Topic 32 hingegen dreht sich wohl um verschiedene Parteien inklusive Koalitionsmöglichkeiten, da sämtliche großen Parteien CDU, SPD, Grüne und FDP vorkommen, als auch zwei mögliche Koalitionen Jamaika (CDU, Grüne, FDP) und Ampel (SPD, Grüne, FDP). 
 
-Display word cloud for topics' keywords
+
+Anschließend können die Ergebnisse mit der Funktion plot.STM(model8, type="perspectives") grafisch dargestellt werden. Diese Funktion zeigt, welche Wörter innerhalb eines Themas stärker mit einem Kovarianz-Wert verbunden sind als mit einem anderen. Folgend sind die Wortschatzunterschiede zwischen den beiden Top Topics 32 und 9 dargestellt. 
+
+```{r}
+plot.STM(model8, type="perspectives", topics = c(61,17))
+```
+
+
+
+Eine weitere Option die mit dem stm-Paket in Verbindung mit dem wordcloud-Pakets möglich sind, sind eben diese wordclouds. Diese stellen eine schöne Darstellung an meist genutzten Wörter eines Topics da, inklusive visueller Abhebungen der Wichtigkeit der jeweiligen Wörter durch Größe der Schrift. Im Folgenden werden die wordclouds zu den meist aufgetretenen Topics 9 und 32 dargestellt. 
 
 ```{r}
 
@@ -256,16 +292,65 @@ cloud(model8, topic=32, max.words = 100)
 
 
 
-```{r}
-plot.STM(model8, type="perspectives", topics = c(61,17))
+# 4. Linkanalyse
+
+Die Linkanalyse wird mit Hilfe des R Paketes visNetwork umgesetzt.  Interessante zu erwartende Erkenntnisse sind, die Verbindungen der Wörter aus Model 8 zu untersuchen, um so zwischen den Topics Zusammenhänge erkennen zu können. Daraus kann auch hervorkommen, welche Begriffe in verschiedenen Topics vorkamen und mit welchen Verbindungen sich ein Netzwerk Graf aufbaut. Aus den 80 Topics werden jeweils die fünf meist aufgetretenen Wörter herausgezogen. Diese 400 Wörter werden im Diagramm als Knoten erscheinen. Die Verbindungen zwischen den Knoten werden halbautomatisiert ermittelt. 
+
+Die Gewinnung der Knoten wurde per Hand vorgenommen. Dazu wurden die Topics mit jeweils fünf Wörtern ausgegeben und in eine Excel Tabelle eingefügt. Diese wurde alphabetisch sortiert und durchnummeriert, sodass jedes Wort eine eindeutige ID erhält, die auch unter den Duplikaten vorhanden ist. Unter Einhaltung der Reihenfolge der Wörter wurde anschließend in einem Python Programm die Verteilung der Verbindungen zwischen den Knoten durchgeführt. Dazu wurden immer fünf aufeinanderfolgende Knoten in sämtlichen Kombinationen miteinander verbunden. Durch die Duplikate der Liste ist es so möglich, auch Verbindungen zu anderen Topics herzustellen, da ein Duplikat mit der gleichen ID in verschiedenen Topics auftauchen könnte und daher mit jedem Wort der jeweiligen unterschiedlichen Topics verbunden wäre. Die Knoten und Verbindungen wurden mit Hilfe zweier Python Programme in JSON Dateien gebracht, wodurch diese im R Workbook mit visNetwork ausführbar wurden. Die JSON Dateien sind frei zugänglich in GitHub  abgelegt, worauf auch das R Workbook zugreift. 
+
+## 100.000 Daten: Model 8
+
+``` {r}
+
+nodes <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%20100.000/visNodes100.000.json")
+
+edges <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%20100.000/visEdges100.000.json")
+
+
+visNetwork(nodes, edges, height = "1000px", width = "100%") %>%
+  visOptions(selectedBy = "group", 
+             highlightNearest = TRUE, 
+             nodesIdSelection = TRUE) %>%
+  visPhysics(stabilization = FALSE)
+
+
 ```
 
 
 
+Als Knotenpunkte mit vielen Verbindungen dienen vor allem die direkten Parteinamen CDU, SPD, AfD und FDP. Bei den Grünen führen verschiedene Wortteile („grün“, „grüne“ und „grünen“) zu drei Knotenpunkten, weshalb die Partei nicht als zentraler Knotenpunkt erscheint. Vor allem mit welchen Wörtern „CDU“ genutzt wurde ist interessant zu betrachten, wobei sowohl positive Begriffe wie „Hoffnung“, „Wohlstand“ oder „Sicherheit“ in Verbindung stehen, aber auch eine Vielzahl an negativen Begriffen wie „Angst“, „Nie mehr CDUCSU“, „Laschet darf nicht Kanzler werden“ oder „Müll“ verwendet werden. Dies lässt auf eine hohe Polarisation im Kontext der CDU schließen. Dass die Parteien überhaupt als Knotenpunkte dienen, ist nicht weiter überraschend, da diese im Suchquery der Twitter-ID als Schlagworte verwendet wurden und in vielen Tweets die Begriffe dementsprechend auftauchen.
 
-Linkanalyse
 
-10.000 Daten
+Zum Vergleich wurde eine weitere Linkanalyse auf Model 7 gemacht, also mit 70 vorhandenen Topics. Dieses Model hatte die geringste semantische Kohärenz und die höchste Exklusivität. Bei der Betrachtung der folgenden Linkanalyse wird auch klar, welche Auswirkungen dies auf die Verbindungen zwischen den Knoten hat. Die meisten Topics sind unabhängig am Rand lediglich mit den anderen Wörtern des jeweiligen Topics verbunden. Es gibt nur wenige Verbindungen zwischen mehrerer Topics, was keine brauchbaren Vernetzungen hervorbringt. 
+
+## 100.000 Daten Model 7
+
+``` {r}
+
+nodes <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%20100.000/Model7/visNodes100.000Model7.json")
+
+edges <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%20100.000//Model7/visEdges100.000Model7.json")
+
+
+visNetwork(nodes, edges, height = "1000px", width = "100%") %>%
+  visOptions(selectedBy = "group", 
+             highlightNearest = TRUE, 
+             nodesIdSelection = TRUE) %>%
+  visPhysics(stabilization = FALSE)
+
+
+```
+
+
+Daraus bestätigt sich die Annahme, dass eine geringere Exklusivität und eine höhere semantische Kohärenz zu mehr Verbindungen zwischen unterschiedlichen Topics führen und dadurch ein besserer Überblick auf das Wording im Zusammenhang mit bestimmten Begrifflichkeiten entsteht. Jedoch wird bei der Betrachtung der Wörter beider Versionen klar, dass mehr Stoppwörter nötig sind, um bessere und aussagekräftigere Aussagen über die Topics treffen zu können. Daher muss in folgenden Versuchen auf Listen zurückgegriffen werden, die bereits von Beginn an eine höhere Anzahl an Stoppwörtern ausschließen und nicht in die Betrachtung einbinden. Da im Kontext dieser Arbeit aus Zeitmangel kein weiteres Topic Model erstellt wird, bildet dies jedoch einen sinnvollen Ansatz für aufbauende Projekte. Auch der Mangel an Arbeitsspeicher-Kapazitäten bildet eine Option zur Verbesserung in zukünftigen Projekten, sodass auch ein größerer Teil der Daten, wenn nicht der Gesamtdatensatz einbezogen und analysiert werden kann. Nichtsdestotrotz konnte das Topic Model gebräuchliche Wörter im Zusammenhang mit Parteien und Kandidat:innen aufdecken und verschiedene Topics ausgeben, die interessant zu betrachten sind. 
+
+Eine weitere Erkenntnis, die beim Betrachten der Topics und der Linkanalyse auffällt ist, dass ein Fehler in der Datenbereinigung aufgetreten ist. Zwar konnten ungewünschte Teile der Daten, wie Sonderzeichen oder Zeichenumbrüche entfernt werden, jedoch wurden in sozialen Medien übliche Emojis nicht näher betrachtet. Dies ist beim Betrachten des Datensatzes nicht aufgefallen und blieb daher bis zu diesem Punkt unbemerkt. Beim Betrachten der Topics tauchen die zwei Emoji Kombinationen auf, die vom Structural Topic Model als Begriffe analysiert wurden. In diesem Fall stellt dies kein weiteres Problem da.
+
+
+Zu Testzwecken wurde vorab ein Topic Modeling inklusive Linkanalyse mit 10.000 Tweets gefertigt. Die Linkanalyse ist im Folgenden abgebildet.
+
+
+## 10.000 Daten
 
 ``` {r}
 
@@ -284,41 +369,15 @@ visNetwork(nodes, edges, height = "1000px", width = "100%") %>%
 ```
 
 
-100.000 Daten
-
-``` {r}
-
-nodes <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%20100.000/visNodes100.000.json")
-
-edges <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%20100.000/visEdges100.000.json")
 
 
-visNetwork(nodes, edges, height = "1000px", width = "100%") %>%
-  visOptions(selectedBy = "group", 
-             highlightNearest = TRUE, 
-             nodesIdSelection = TRUE) %>%
-  visPhysics(stabilization = FALSE)
 
 
-```
-
-``` {r}
-
-nodes <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%20100.000/Model7/visNodes100.000Model7.json")
-
-edges <- jsonlite::fromJSON("https://raw.githubusercontent.com/fraygeyst/linkanalysis/main/Datenaufbereitung%20100.000//Model7/visEdges100.000Model7.json")
 
 
-visNetwork(nodes, edges, height = "1000px", width = "100%") %>%
-  visOptions(selectedBy = "group", 
-             highlightNearest = TRUE, 
-             nodesIdSelection = TRUE) %>%
-  visPhysics(stabilization = FALSE)
+## Topic Word Liste
 
-
-```
-
-Print topic keywords
+Zum Abschluss die komplette Topic Word Liste des finalen Topic Models. Aus diesem wurden die Informationen für die Linkanalyse gewonnen und aufbereitet. Alle Aufbereitungsdateien sind ebenfalls in GitHub zu finden. 
 
 ```{r}
 
